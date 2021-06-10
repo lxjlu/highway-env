@@ -41,7 +41,7 @@ class MyEnv(AbstractEnv):
     def _make_road(self):
         net = RoadNetwork()
 
-        radius = 200  # [m]
+        radius = 500  # [m]
         center = [10, StraightLane.DEFAULT_WIDTH + radius]  # [m]
         alpha = 0  # [deg]
         radii = [radius, radius + StraightLane.DEFAULT_WIDTH,
@@ -57,6 +57,7 @@ class MyEnv(AbstractEnv):
 
         road = Road(network=net, np_random=self.np_random, record_history=self.config["show_trajectories"])
         self.road = road
+        self.road.record_history = True
 
     def _make_vehicles(self):
         ego_lane = self.road.network.get_lane(("a", "b", 1))

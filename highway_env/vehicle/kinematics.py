@@ -39,7 +39,7 @@ class Vehicle(RoadObject):
         self.crashed = False
         self.impact = None
         self.log = []
-        self.history = deque(maxlen=30)
+        self.history = deque(maxlen=50)
 
     @classmethod
     def make_on_lane(cls, road: Road, lane_index: LaneIndex, longitudinal: float, speed: float = 0) -> "Vehicle":

@@ -84,6 +84,12 @@ class LxVehicle(Vehicle):
             self.route = [self.lane_index]
         return self
 
+    def target_lane_position(self):
+        target_lane = self.road.network.get_lane(self.target_lane_index)
+        lane_coords = target_lane.local_coordinates(self.position)
+        lane_coords = target_lane.position(lane_coords[0], 0)
+        return lane_coords
+
     def act(self, action: Union[dict, str] = None) -> None:
         """
         Perform a high-level action to change the desired lane or speed.
