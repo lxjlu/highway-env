@@ -1,4 +1,5 @@
 import pytest
+import numpy as np
 
 from highway_env.road.lane import StraightLane
 from highway_env.road.road import Road, RoadNetwork
@@ -32,3 +33,6 @@ def test_network():
             lane_index = v.target_lane_index
             lane_changes += 1
     assert lane_changes >= 3
+
+
+test_network()
