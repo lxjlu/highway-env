@@ -84,11 +84,12 @@ class LxVehicle(Vehicle):
             self.route = [self.lane_index]
         return self
 
-    def target_lane_position(self):
+    def target_lane_position(self, initial_position):
         target_lane = self.road.network.get_lane(self.target_lane_index)
-        lane_coords = target_lane.local_coordinates(self.position)
-        lane_coords = target_lane.position(lane_coords[0], 0)
-        return lane_coords
+        lane_coords = target_lane.local_coordinates(initial_position)
+        lane_x = lane_coords[0] + np.arange(0, 500, 50)
+        lane_y = np.zeros(len(lane_x))
+        return lane_x, lane_y
 
     def act(self, action: Union[dict, str] = None) -> None:
         """
@@ -100,10 +101,10 @@ class LxVehicle(Vehicle):
         :param action: a high-level action
         """
         self.follow_road()
-        if action == "FASTER":
-            self.target_speed += self.DELTA_SPEED
-        elif action == "SLOWER":
-            self.target_speed -= self.DELTA_SPEED
+        # if action == "FASTER":
+        #     self.target_speed += self.DELTA_SPEED
+        # elif action == "SLOWER":
+        #     self.target_speed -= self.DELTA_SPEED
         # elif action == "LANE_RIGHT":
         #     _from, _to, _id = self.target_lane_index
         #     target_lane_index = _from, _to, np.clip(_id + 1, 0, len(self.road.network.graph[_from][_to]) - 1)
@@ -213,6 +214,8 @@ class LxVehicle(Vehicle):
         route = self.route or [self.lane_index]
         return tuple(zip(*[self.road.network.position_heading_along_route(route, coordinates[0] + self.speed * t, 0)
                            for t in times]))
+
+
 
 
 

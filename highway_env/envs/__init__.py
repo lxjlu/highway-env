@@ -10,4 +10,7 @@ from highway_env.envs.u_turn_env import *
 from highway_env.envs.exit_env import *
 
 from highway_env.envs.my_env import *
+from highway_env.envs.my_env_data_1 import *
+from highway_env.envs.my_env_data_2 import *
+from highway_env.envs.my_env_data_3 import *
 

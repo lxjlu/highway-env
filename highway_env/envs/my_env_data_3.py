@@ -1,3 +1,4 @@
+from highway_env.envs import Action
 from highway_env.vehicle.controller import MDPVehicle, ControlledVehicle
 
 from highway_env.envs.common.abstract import AbstractEnv
@@ -11,8 +12,7 @@ from gym.envs.registration import register
 from highway_env.vehicle.lx_vehicle import LxVehicle
 
 
-class MyEnv(AbstractEnv):
-
+class DataCollect03(AbstractEnv):
 
     @classmethod
     def default_config(cls) -> dict:
@@ -27,22 +27,36 @@ class MyEnv(AbstractEnv):
             "lanes_count": 3,
             "policy_frequency": 10,
             'simulation_frequency': 10,
-            "vehicles_count": 50,
+            "vehicles_count": 1,
             "controlled_vehicles": 1,
             "initial_lane_id": None,
-            "centering_position": [0.6, 0.8],
+            "centering_position": [0.5, 0.5],
             "screen_width": 789,
             "screen_height": 400,
             "duration": 100,
             "reward_speed_range": [8, 24],
             "offroad_terminal": False,
+            "show_trajectories": True,
+            "scaling": 6,
+
+            "v_lane_id": ("a", "b", 1),
+            "v_target_id": ("a", "b", 1),
+            "v_x": 100.0,
+            "v_y": 0.0,
+            "v_h": 0.0,
+            "v_s": 10.0,
+            "v_target_s": 20.0,
+            "KP_A": 5,
+            "KP_HEADING": 5,
+            "KP_LATERAL": 3,
+            "TAU_PURSUIT": 0.1
         })
         return config
 
-    def _make_road(self):
+    def _make_road(self) -> None:
         net = RoadNetwork()
 
-        radius = 500  # [m]
+        radius = 100  # [m]
         center = [10, StraightLane.DEFAULT_WIDTH + radius]  # [m]
         alpha = 0  # [deg]
         radii = [radius, radius + StraightLane.DEFAULT_WIDTH,
@@ -61,13 +75,13 @@ class MyEnv(AbstractEnv):
         self.road.record_history = True
 
     def _make_vehicles(self):
-        ego_lane = self.road.network.get_lane(("a", "b", 1))
+        ego_lane = self.road.network.get_lane(self.config["v_lane_id"])
         ego_vehicle = LxVehicle(self.road,
-                                ego_lane.position(20, 0),
-                                # target_lane_index=("a", "b", 0),
-                                speed=20,
-                                # target_lane_index=self.target_lane_id,
-                                # target_speed=self.target_speed
+                                ego_lane.position(self.config["v_x"], self.config["v_y"]),
+                                heading=self.config["v_h"],
+                                speed=self.config["v_s"],
+                                target_lane_index=self.config["v_target_id"],
+                                target_speed=self.config["v_target_s"]
                                 )
 
         self.road.vehicles.append(ego_vehicle)
@@ -83,8 +97,11 @@ class MyEnv(AbstractEnv):
     def _is_terminal(self) -> bool:
         pass
 
+    def _cost(self, action: Action) -> float:
+        pass
+
 
 register(
-    id='myenv-r1-v0',
-    entry_point='highway_env.envs:MyEnv'
+    id='myenv-c3-v0',
+    entry_point='highway_env.envs:DataCollect03'
 )

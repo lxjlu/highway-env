@@ -7,6 +7,10 @@ import matplotlib.pyplot as plt
 env = gym.make("myenv-r1-v0")
 # env = gym.make("u-turn-v0")
 env.reset()
+target_lane_index=("a", "b", 0)
+target_speed = 10
+env.vehicle.target_lane_index = target_lane_index
+env.vehicle.targe_speed = target_speed
 target_lane_x = []
 target_lane_y = []
 v_his_x = []

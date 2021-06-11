@@ -212,6 +212,27 @@ class RoadNetwork(object):
         return [lane for to in self.graph.values() for ids in to.values() for lane in ids]
 
     @staticmethod
+    def lx_straight(lanes: int = 3,
+                    start: float = 0,
+                    length: float = 1000,
+                    angle: float = 0,
+                    nodes_str: Optional[Tuple[str, str]] = None,
+                    net: Optional['RoadNetwork'] = None) \
+            -> 'RoadNetwork':
+        net = net or RoadNetwork()
+        nodes_str = nodes_str or ("a", "b")
+        for lane in range(lanes):
+            origin = np.array([start, lane * StraightLane.DEFAULT_WIDTH])
+            end = np.array([start + length, lane * StraightLane.DEFAULT_WIDTH])
+            rotation = np.array([[np.cos(angle), np.sin(angle)], [-np.sin(angle), np.cos(angle)]])
+            origin = rotation @ origin
+            end = rotation @ end
+            line_types = [LineType.CONTINUOUS_LINE if lane == 0 else LineType.STRIPED,
+                          LineType.CONTINUOUS_LINE if lane == lanes - 1 else LineType.NONE]
+            net.add_lane(*nodes_str, StraightLane(origin, end, line_types=line_types))
+        return net
+
+    @staticmethod
     def straight_road_network(lanes: int = 4,
                               start: float = 0,
                               length: float = 10000,
@@ -249,7 +270,6 @@ class RoadNetwork(object):
 
 
 class Road(object):
-
     """A road is a set of lanes, and a set of vehicles driving on these lanes."""
 
     def __init__(self,
@@ -299,7 +319,7 @@ class Road(object):
         for vehicle in self.vehicles:
             vehicle.step(dt)
         for i, vehicle in enumerate(self.vehicles):
-            for other in self.vehicles[i+1:]:
+            for other in self.vehicles[i + 1:]:
                 vehicle.check_collision(other, dt)
             for other in self.objects:
                 vehicle.check_collision(other, dt)
