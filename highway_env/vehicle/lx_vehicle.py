@@ -87,9 +87,24 @@ class LxVehicle(Vehicle):
     def target_lane_position(self, initial_position):
         target_lane = self.road.network.get_lane(self.target_lane_index)
         lane_coords = target_lane.local_coordinates(initial_position)
-        lane_x = lane_coords[0] + np.arange(0, 500, 50)
-        lane_y = np.zeros(len(lane_x))
+        # x_r = lane_coords[0] + np.arange(0, 301, 10)
+        # lane_x = [target_lane.position(item, 0)[0] for item in x_r]
+        # lane_y = [0 for item in x_r]
+        x_r = lane_coords[0]
+        y_r = 0
+        lane_x = []
+        lane_y = []
+        for item in np.arange(0, 301, 10):
+            xx, yy = target_lane.position(x_r + item, 0)
+            lane_x.append(xx)
+            lane_y.append(yy)
         return lane_x, lane_y
+
+    def target_lane2_position(self):
+        target_lane = self.road.network.get_lane(self.target_lane_index)
+        lane_coords = target_lane.local_coordinates(self.position)
+        x, y = target_lane.position(lane_coords[0], 0)
+        return x, y
 
     def act(self, action: Union[dict, str] = None) -> None:
         """
@@ -214,8 +229,3 @@ class LxVehicle(Vehicle):
         route = self.route or [self.lane_index]
         return tuple(zip(*[self.road.network.position_heading_along_route(route, coordinates[0] + self.speed * t, 0)
                            for t in times]))
-
-
-
-
-
