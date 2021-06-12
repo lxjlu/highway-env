@@ -94,7 +94,7 @@ class LxVehicle(Vehicle):
         y_r = 0
         lane_x = []
         lane_y = []
-        for item in np.arange(0, 301, 10):
+        for item in np.arange(0, 101, 10):
             xx, yy = target_lane.position(x_r + item, 0)
             lane_x.append(xx)
             lane_y.append(yy)
@@ -183,7 +183,8 @@ class LxVehicle(Vehicle):
         :param target_speed: the desired speed
         :return: an acceleration command [m/s2]
         """
-        return self.KP_A * (target_speed - self.speed)
+
+        return np.clip(self.KP_A * (target_speed - self.speed), -5.0, 5.0)
 
     def get_routes_at_intersection(self) -> List[Route]:
         """Get the list of routes that can be followed at the next intersection."""

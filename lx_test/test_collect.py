@@ -82,8 +82,14 @@ y_his = []
 x_his.append(env.vehicle.position[0])
 y_his.append(env.vehicle.position[1])
 action = 1
+action_his_omega = []
+action_his_accel = []
+
 for _ in range(N):
     # print("x is {}, y is {}".format(env.vehicle.position[0], env.vehicle.position[1]))
+    action_his_omega.append(env.vehicle.action["steering"])
+    action_his_accel.append(env.vehicle.action["acceleration"])
+
     if env.vehicle.on_road is False:
         print("出去了")
         break
@@ -99,7 +105,10 @@ env.close()
 
 lane_change = target_lane_id - lane_id
 
-
+plt.figure(1)
 plt.plot(x_his, y_his)
 plt.plot(x_road, y_road)
+# plt.figure(2)
+# plt.plot(np.arange(len(action_his_accel)), action_his_accel)
 plt.show()
+
