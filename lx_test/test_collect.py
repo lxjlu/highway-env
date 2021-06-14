@@ -19,14 +19,14 @@ N = 50
 """
 # 选择不同的道路
 env_lucky = envs[np.random.choice(np.arange(3))]
-print("env is {}".format(env_lucky))
+# print("env is {}".format(env_lucky))
 
 env = gym.make(env_lucky)
 
 # 选择不同的初始状态
 lanes_count = env.config["lanes_count"]
 lane_id = np.random.choice(np.arange(lanes_count))
-print("v lane id is {}".format(lane_id))
+# print("v lane id is {}".format(lane_id))
 
 if lane_id == 0:
     target_lane_id = np.random.choice([0, 1])
@@ -35,10 +35,10 @@ elif lane_id == lanes_count - 1:
 else:
     target_lane_id = np.random.choice([lane_id - 1, lane_id, lane_id + 1])
 
-print("target lane id is {}".format(target_lane_id))
+# print("target lane id is {}".format(target_lane_id))
 
 lon_operation = np.random.choice([0, 1, 2])  # 1保持 0减速 2加速
-print("1保持 0减速 2加速 - is {}".format(lon_operation))
+# print("1保持 0减速 2加速 - is {}".format(lon_operation))
 
 v_lane_id = ("a", "b", lane_id)
 target_lane_id2 = ("a", "b", target_lane_id)
@@ -46,9 +46,9 @@ v_target_s = (lon_operation - 1) * 5 + env.vehicle.speed
 v_target_s = np.clip(0, 30, v_target_s)
 
 positon_x = np.random.choice(np.arange(0, env.road.network.get_lane(v_lane_id).length, 10))
-print("position x is {}".format(positon_x))
+# print("position x is {}".format(positon_x))
 positon_y = np.random.choice(np.arange(-2, 2, 3))
-print("position y is {}".format(positon_y))
+# print("position y is {}".format(positon_y))
 heading = np.random.choice(
     env.road.network.get_lane(v_lane_id).heading_at(positon_x) + np.arange(-np.pi / 12, np.pi / 12, 10))
 speed = np.random.choice(np.arange(0, 25, 5))
