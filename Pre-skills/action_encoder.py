@@ -57,7 +57,7 @@ class ActionEncoder(nn.Module):
         pass
 
     def forward(self, s_0, s_s, A):
-        skill_embed = self.skill_embed_size(s_0 + s_s + A)
+        skill_embed = self.skill_encoder(s_0 + s_s + A)
         return skill_embed
 
 
