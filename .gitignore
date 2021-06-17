@@ -21,3 +21,16 @@ _build
 
 # Outputs
 **/out/*
+
+# data
+Pre-skills/*.npy
+.gitignore
+
+
+
+Pre-skills/a_his.npy
+Pre-skills/anchors.npy
+Pre-skills/n_his.npy
+Pre-skills/negatives.npy
+Pre-skills/p_his.npy
+Pre-skills/positives.npy
