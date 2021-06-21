@@ -28,12 +28,12 @@ class Encoder(nn.Module):
         temp = self.skill_encoder(x)
         temp = temp.reshape(b, n_item, self.skill_embed_size)
         sim = F.cosine_similarity(temp[:, 0, :].unsqueeze(1), temp, dim=-1)
-        sim = torch.exp(sim[:, 1:])
+        sim = torch.exp(sim[:, 1:] / self.t)
         loss = sim[:, 0] / torch.sum(sim, dim=1)
         return temp, sim, -loss.mean()
 
 
-dataset = ContrastiveData()
-tt = dataset[:2]
-en = Encoder(100, 400, 0.5)
-temp, sim, loss = en.forward(tt)
+# dataset = ContrastiveData()
+# tt = dataset[:2]
+# en = Encoder(100, 400, 0.5)
+# temp, sim, loss = en.forward(tt)

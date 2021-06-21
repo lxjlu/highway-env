@@ -12,6 +12,16 @@ envs = {
 }
 N = 50
 
+# 1保持 0减速 2加速 lon
+# -1左 0保持 1右 latral
+"""
+    | 0  1  2
+-1  |
+ 0  |
+ 1  |
+"""
+labels_index = np.arange(9).reshape(3, 3)
+
 
 def anchor_selector():
     """
@@ -27,7 +37,7 @@ def anchor_selector():
     # 选择不同的初始状态
     lanes_count = env.config["lanes_count"]
     lane_id = np.random.choice(np.arange(lanes_count))
-    # print("v lane id is {}".format(lane_id))
+    print("v lane id is {}".format(lane_id))
 
     if lane_id == 0:
         target_lane_id = np.random.choice([0, 1])
@@ -36,10 +46,10 @@ def anchor_selector():
     else:
         target_lane_id = np.random.choice([lane_id - 1, lane_id, lane_id + 1])
 
-    # print("target lane id is {}".format(target_lane_id))
+    print("target lane id is {}".format(target_lane_id))
 
     lon_operation = np.random.choice([0, 1, 2])  # 1保持 0减速 2加速
-    # print("1保持 0减速 2加速 - is {}".format(lon_operation))
+    print("1保持 0减速 2加速 - is {}".format(lon_operation))
 
     v_lane_id = ("a", "b", lane_id)
     target_lane_id2 = ("a", "b", target_lane_id)
@@ -96,7 +106,9 @@ def anchor_selector():
     pp = x_his + y_his + h_his + s_his
     lane_change = target_lane_id - lane_id
 
-    return lane_change, lon_operation, tt, pp
+    label = labels_index[lane_change + 1, lon_operation]
+
+    return lane_change, lon_operation, tt, pp, label
 
 
 def positive_selector(lateral_operation, lon_operation):
@@ -268,5 +280,5 @@ def negative_selector(lateral_operation, lon_operation):
 # negative_selector(lane_change, lon_operation)
 
 
-lane_change, lon_operation, tt, pp = anchor_selector()
-tt_8, pp_8 = negative_selector(lane_change, lon_operation)
+lane_change, lon_operation, tt, pp, label = anchor_selector()
+# tt_8, pp_8 = negative_selector(lane_change, lon_operation)
