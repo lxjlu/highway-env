@@ -14,21 +14,17 @@ p_his = np.load("p_his.npy")
 class ContrastiveData(Dataset):
 
     def __init__(self):
-        self.anchors = torch.Tensor(a)
-        self.postives = torch.Tensor(p)
+        self.anchors = torch.Tensor(a).unsqueeze(dim=1)
+        self.postives = torch.Tensor(p).unsqueeze(dim=1)
         self.negatives = torch.Tensor(n)
 
-        self.a_his = torch.Tensor(a_his)
-        self.p_his = torch.Tensor(p_his)
-        self.n_his = torch.Tensor(n_his)
+        self.item = torch.cat((self.anchors, self.postives, self.negatives), dim=1)
 
     def __len__(self):
-        return len(self.anchors)
+        return self.anchors.shape[0]
 
     def __getitem__(self, idx):
-        return self.anchors[idx, :], self.postives[idx, :], self.negatives[idx, :], \
-    self.a_his[idx, :], self.p_his[idx, :], self.n_his[idx, :]
-
+        return self.item[idx, :]
 
 # if __name__=="__main__":
 #     dataset = ContrastiveData()
