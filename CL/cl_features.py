@@ -10,6 +10,7 @@ class SupEncoder(nn.Module):
 
     def __init__(self, input_dim, hidden_dim=512, head='mlp', feat_dim=24):
         super(SupEncoder, self).__init__()
+        self.feat_dim = feat_dim
 
         self.encoder = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
@@ -19,7 +20,7 @@ class SupEncoder(nn.Module):
         self.embedding_dim = feat_dim
         self.num_embedding = 9
         self._embedding = nn.Embedding(self.num_embedding, self.embedding_dim)
-        self._embedding.weight.data.uniform_(-1/self._num_embeddings, 1/self._num_embeddings)
+        self._embedding.weight.data.uniform_(-1/self.num_embedding, 1/self.num_embedding)
 
 
 
@@ -35,7 +36,19 @@ class SupEncoder(nn.Module):
             raise NotImplementedError(
                 'head not supported: {}'.format(head))
 
-    def forward(self, x):
+    def forward(self, x, label):
         feat = self.encoder(x)
         feat = F.normalize(self.head(feat), dim=1)
-        return feat
+        loss_em = self.emb_loss(feat, label)
+        return feat, loss_em
+
+    def emb_loss(self, feats, labels):
+        labels = labels.contiguous().view(-1, 1)
+        loss = 0
+        for i in range(9):
+            mask = torch.eq(labels, i)
+            tt = feats.masked_select(mask).view(-1, self.feat_dim)
+
+            # print(feats.shape)
+            loss += torch.dist(tt.detach(), self._embedding.weight[i, :], 2)
+        return loss

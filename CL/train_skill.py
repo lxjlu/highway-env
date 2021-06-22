@@ -29,23 +29,29 @@ criterion.to(device)
 
 def train(nums):
     loss_his = []
+    em_loss_his = []
     global_step = 1
     for i in range(nums):
         for idx, (data, labels) in enumerate(train_loader):
-            feats = model(data)
+            feats, em_loss = model(data, labels)
             loss, mean_log_prob = criterion(feats, labels)
             loss_his.append(loss.item())
+            em_loss_his.append(em_loss.item())
+
+            loss_total = em_loss + loss
             optimizer.zero_grad()
-            loss.backward()
+            loss_total.backward()
             optimizer.step()
             # print(global_step)
             if global_step % 100 == 0:
                 # writer.add_scalar("loss", loss.item(), global_step)
                 print("Global step is {}, the loss is {}".format(global_step, loss))
             global_step += 1
-    return loss_his
+    return loss_his, em_loss_his
 
-loss_his = train(2000)
+loss_his, em_loss_his = train(2000)
 torch.save(model, 'model.pkl')
 plt.plot(np.arange(len(loss_his)), loss_his)
+plt.figure()
+plt.plot(np.arange(len(em_loss_his)), em_loss_his)
 plt.show()
