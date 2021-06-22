@@ -16,6 +16,13 @@ class SupEncoder(nn.Module):
             nn.ReLU(),
         )
 
+        self.embedding_dim = feat_dim
+        self.num_embedding = 9
+        self._embedding = nn.Embedding(self.num_embedding, self.embedding_dim)
+        self._embedding.weight.data.uniform_(-1/self._num_embeddings, 1/self._num_embeddings)
+
+
+
         if head == 'linear':
             self.head = nn.Linear(hidden_dim, feat_dim)
         elif head == 'mlp':
