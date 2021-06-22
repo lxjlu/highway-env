@@ -42,7 +42,7 @@ def train(nums):
 
 
 # 保存
-torch.save(model, 'model.pkl')
+# torch.save(model, 'model.pkl')
 # 加载
 # model = torch.load('\model.pkl')
 
