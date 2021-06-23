@@ -18,6 +18,7 @@ class EnvViewer(object):
     """A viewer to render a highway driving environment."""
 
     SAVE_IMAGES = False
+    # SAVE_IMAGES = True
 
     def __init__(self, env: 'AbstractEnv', config: Optional[dict] = None) -> None:
         self.env = env

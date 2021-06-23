@@ -1,8 +1,10 @@
 import gym
 import numpy as np
+import time
 import highway_env
 import torch
 from torch.utils.data import Dataset
+from scripts.utils import record_videos, show_videos
 
 envs = {
     0: "myenv-c1-v0",  # 直线
@@ -33,6 +35,7 @@ def anchor_selector():
     # print("env is {}".format(env_lucky))
 
     env = gym.make(env_lucky)
+    env = record_videos(env)
 
     # 选择不同的初始状态
     lanes_count = env.config["lanes_count"]
@@ -56,11 +59,11 @@ def anchor_selector():
     v_target_s = (lon_operation - 1) * 5 + env.vehicle.speed
     v_target_s = np.clip(0, 30, v_target_s)
 
-    positon_x = np.random.choice(np.arange(0, env.road.network.get_lane(v_lane_id).length, 10))
-    positon_y = np.random.choice(np.arange(-2, 2, 3))
+    positon_x = np.random.choice(np.arange(0, env.road.network.get_lane(v_lane_id).length, 5))
+    positon_y = np.random.choice(np.arange(-2, 2, 0.5))
     heading = np.random.choice(
         env.road.network.get_lane(v_lane_id).heading_at(positon_x) + np.arange(-np.pi / 12, np.pi / 12, 10))
-    speed = np.random.choice(np.arange(0, 25, 5))
+    speed = np.random.choice(np.arange(0, 25, 2))
 
     position = env.road.network.get_lane(v_lane_id).position(positon_x, positon_y)
     inital_state = [position, heading, speed]
@@ -97,8 +100,8 @@ def anchor_selector():
         y_his.append(env.vehicle.position[1])
         h_his.append(env.vehicle.heading)
         s_his.append(env.vehicle.speed)
-        # env.render()
-        # time.sleep(0.5)
+        env.render()
+        time.sleep(0.5)
     env.close()
     # temp = temp.extend(action_his_omega)
     # temp = temp.extend(action_his_accel)
@@ -147,3 +150,5 @@ class CLData(Dataset):
 
 # d, l = generator(10000)
 # dataset = CLData()
+anchor_selector()
+show_videos()

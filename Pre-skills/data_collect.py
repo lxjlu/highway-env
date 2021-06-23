@@ -56,11 +56,11 @@ def anchor_selector():
     v_target_s = (lon_operation - 1) * 5 + env.vehicle.speed
     v_target_s = np.clip(0, 30, v_target_s)
 
-    positon_x = np.random.choice(np.arange(0, env.road.network.get_lane(v_lane_id).length, 10))
-    positon_y = np.random.choice(np.arange(-2, 2, 3))
+    positon_x = np.random.choice(np.arange(0, env.road.network.get_lane(v_lane_id).length, 5))
+    positon_y = np.random.choice(np.arange(-2, 2, 0.5))
     heading = np.random.choice(
         env.road.network.get_lane(v_lane_id).heading_at(positon_x) + np.arange(-np.pi / 12, np.pi / 12, 10))
-    speed = np.random.choice(np.arange(0, 25, 5))
+    speed = np.random.choice(np.arange(0, 26, 5))
 
     position = env.road.network.get_lane(v_lane_id).position(positon_x, positon_y)
     inital_state = [position, heading, speed]
