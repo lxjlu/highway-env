@@ -4,7 +4,7 @@ import time
 import highway_env
 import torch
 from torch.utils.data import Dataset
-from scripts.utils import record_videos, show_videos
+# from scripts.utils import record_videos, show_videos
 
 envs = {
     0: "myenv-c1-v0",  # 直线
@@ -35,7 +35,7 @@ def anchor_selector():
     # print("env is {}".format(env_lucky))
 
     env = gym.make(env_lucky)
-    env = record_videos(env)
+    # env = record_videos(env)
 
     # 选择不同的初始状态
     lanes_count = env.config["lanes_count"]
@@ -60,7 +60,7 @@ def anchor_selector():
     v_target_s = np.clip(0, 30, v_target_s)
 
     positon_x = np.random.choice(np.arange(0, env.road.network.get_lane(v_lane_id).length, 5))
-    positon_y = np.random.choice(np.arange(-2, 2, 0.5))
+    positon_y = np.random.choice(np.arange(-2, 2.1, 0.5))
     heading = np.random.choice(
         env.road.network.get_lane(v_lane_id).heading_at(positon_x) + np.arange(-np.pi / 12, np.pi / 12, 10))
     speed = np.random.choice(np.arange(0, 25, 2))
@@ -100,37 +100,77 @@ def anchor_selector():
         y_his.append(env.vehicle.position[1])
         h_his.append(env.vehicle.heading)
         s_his.append(env.vehicle.speed)
-        env.render()
-        time.sleep(0.5)
+        # env.render()
+        # time.sleep(0.1)
     env.close()
     # temp = temp.extend(action_his_omega)
     # temp = temp.extend(action_his_accel)
     tt = temp + x_road + y_road + action_his_omega + action_his_accel
+    # pp = np.vstack((
+    #     np.array(x_his),
+    #     np.array(y_his),
+    #     np.array(h_his),
+    #     np.array(s_his),
+    # ))
     pp = x_his + y_his + h_his + s_his
     lane_change = target_lane_id - lane_id
 
     label = labels_index[lane_change + 1, lon_operation]
-
-    return lane_change, lon_operation, tt, pp, label
+    # s0 = np.array(temp)
+    s0 = temp
+    # ss = np.vstack((
+    #     np.array(x_road),
+    #     np.array(y_road),
+    # ))
+    ss = x_road + y_road
+    # aa = np.vstack((
+    #     np.array(action_his_omega),
+    #     np.array(action_his_accel)
+    # ))
+    aa = action_his_omega + action_his_accel
+    return s0, ss, aa, tt, pp, label
 
 
 def generator(num_data):
     datas = []
     labels = []
 
+    s0_b = []
+    ss_b = []
+    aa_b = []
+    pp_b = []
+
+
+
     for i in range(num_data):
         print("第 {} 个样本".format(i + 1))
 
-        lane_change, lon_operation, tt, pp, label = anchor_selector()
+        s0, ss, aa, tt, pp, label = anchor_selector()
 
         datas.append(tt)
         labels.append(label)
 
+        s0_b.append(s0)
+        ss_b.append(ss)
+        aa_b.append(aa)
+        pp_b.append(pp)
+
     d = np.array(datas)
     l = np.array(labels)
+
+    s0_b = np.array(s0_b)
+    ss_b = np.array(ss_b)
+    aa_b = np.array(aa_b)
+    pp_b = np.array(pp_b)
+
     np.save("data.npy", d)
     np.save("label.npy", l)
-    return d, l
+
+    np.save("s0_b.npy", s0_b)
+    np.save("ss_b.npy", ss_b)
+    np.save("aa_b.npy", aa_b)
+    np.save("pp_b.npy", pp_b)
+    return d, l, s0_b, ss_b, aa_b, pp_b
 
 
 class CLData(Dataset):
@@ -148,7 +188,6 @@ class CLData(Dataset):
         return self.data[idx], self.label[idx]
 
 
-# d, l = generator(10000)
+d, l, s0_b, ss_b, aa_b, pp_b = generator(100000)  
 # dataset = CLData()
-anchor_selector()
-show_videos()
+# s0, ss, aa, tt, pp, label = anchor_selector()
