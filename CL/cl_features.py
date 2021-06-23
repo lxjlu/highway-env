@@ -40,7 +40,7 @@ class SupEncoder(nn.Module):
         feat = self.encoder(x)
         feat = F.normalize(self.head(feat), dim=1)
         loss_em = self.emb_loss(feat, label)
-        return feat, loss_em
+        return feat, loss_em, self._embedding.weight
 
     def emb_loss(self, feats, labels):
         labels = labels.contiguous().view(-1, 1)

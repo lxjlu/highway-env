@@ -33,7 +33,7 @@ def train(nums):
     global_step = 1
     for i in range(nums):
         for idx, (data, labels) in enumerate(train_loader):
-            feats, em_loss = model(data, labels)
+            feats, em_loss, _ = model(data, labels)
             loss, mean_log_prob = criterion(feats, labels)
             loss_his.append(loss.item())
             em_loss_his.append(em_loss.item())
@@ -41,6 +41,7 @@ def train(nums):
             loss_total = em_loss + loss
             optimizer.zero_grad()
             loss_total.backward()
+            # loss.backward()
             optimizer.step()
             # print(global_step)
             if global_step % 100 == 0:
@@ -52,6 +53,6 @@ def train(nums):
 loss_his, em_loss_his = train(2000)
 torch.save(model, 'model.pkl')
 plt.plot(np.arange(len(loss_his)), loss_his)
-plt.figure()
-plt.plot(np.arange(len(em_loss_his)), em_loss_his)
+# plt.figure()
+# plt.plot(np.arange(len(em_loss_his)), em_loss_his)
 plt.show()
