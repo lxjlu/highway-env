@@ -177,17 +177,30 @@ class CLData(Dataset):
     d = np.load("data.npy")
     l = np.load("label.npy")
 
+    s0_b = np.load("s0_b.npy")
+    ss_b = np.load("ss_b.npy")
+    aa_b = np.load("aa_b.npy")
+    pp_b = np.load("pp_b.npy")
+
     def __init__(self):
         self.data = torch.Tensor(self.d)
+        # self.label = self.l.astype(np.int64)
         self.label = torch.Tensor(self.l)
+
+        self.s0_b = torch.Tensor(self.s0_b)
+        self.ss_b = torch.Tensor(self.ss_b)
+        self.aa_b = torch.Tensor(self.aa_b)
+        self.pp_b = torch.Tensor(self.pp_b)
 
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, idx):
-        return self.data[idx], self.label[idx]
+        return self.data[idx], self.label[idx], self.s0_b[idx], self.ss_b[idx], \
+    self.aa_b[idx], self.pp_b[idx]
 
 
-d, l, s0_b, ss_b, aa_b, pp_b = generator(100000)  
-# dataset = CLData()
+# d, l, s0_b, ss_b, aa_b, pp_b = generator(100)
+dataset = CLData()
+d, l, _, _, _, _ = dataset[:100]
 # s0, ss, aa, tt, pp, label = anchor_selector()
