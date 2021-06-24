@@ -11,6 +11,9 @@ accel_max = 1
 omega_max = np.pi/6
 
 def get_first_action(u_hat: torch.Tensor, s_hat: torch.Tensor, z):
+    u_hat = u_hat.item()
+    s_hat = s_hat.item()
+
     x = ca.SX.sym('x')
     y = ca.SX.sym('y')
     theta = ca.SX.sym('theta')
@@ -41,10 +44,10 @@ def get_first_action(u_hat: torch.Tensor, s_hat: torch.Tensor, z):
     ## 不同z对应不同的参数
     zz = z // 3
     if zz == 1:
-        Q = np.array([[1.0, 0.0, 0.0], [0.0, 5.0, 0.0], [0.0, 0.0, .1]])
+        Q = np.array([[1.0, 0.0, 0.0, 0.0], [0.0, 5.0, 0.0, 0.0], [0.0, 0.0, .1, 0.0], [0.0, 0.0, 0.0, 1.0]])
         R = np.array([[0.5, 0.0], [0.0, 0.05]])
     else:
-        Q = np.array([[1.0, 0.0, 0.0], [0.0, 5.0, 0.0], [0.0, 0.0, .1]])
+        Q = np.array([[1.0, 0.0, 0.0, 0.0], [0.0, 5.0, 0.0, 0.0], [0.0, 0.0, .1, 0.0], [0.0, 0.0, 0.0, 1.0]])
         R = np.array([[0.5, 0.0], [0.0, 0.05]])
 
     ## cost function
@@ -86,6 +89,7 @@ def get_first_action(u_hat: torch.Tensor, s_hat: torch.Tensor, z):
         ubx.append(np.inf)
 
     x0 = np.array([0.0, 0.0, 0.0, 0.0]).reshape(-1, 1)# initial state
+
     x_m = np.zeros((n_states, N + 1))
     next_states = x_m.copy().T
     xs = np.array([1.5, 1.5, 0.0]).reshape(-1, 1)  # final state
@@ -98,7 +102,9 @@ def get_first_action(u_hat: torch.Tensor, s_hat: torch.Tensor, z):
     u0 = estimated_opt[:200].reshape(N, n_controls)  # (N, n_controls)
     x_m = estimated_opt[200:].reshape(N + 1, n_states)  # (N+1, n_states)
 
-    return u0[0, :]
+    return u0, x_m
+
+
 
 
 
