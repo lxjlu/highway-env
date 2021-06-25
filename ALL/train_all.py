@@ -10,6 +10,7 @@ from sklearn.manifold import TSNE
 
 save_pid_data = False
 load_pid = True
+save_embedding = False
 
 bf = ReplayBuffer(load_pid)
 clen = CLEncoder()
@@ -18,7 +19,7 @@ clpp = CLPP()
 embedding = torch.nn.Embedding(9, 24)
 cl_optimizer = optim.Adam(clen.parameters(), lr=1e-3)
 em_optimizer = optim.Adam(embedding.parameters(), lr=1e-3)
-pp_optimizer = optim.Adam(embedding.parameters(), lr=1e-3)
+pp_optimizer = optim.Adam(clpp.parameters(), lr=1e-4)
 
 
 def pid_collector(nums=10000, save_pid_data=False):
@@ -140,6 +141,7 @@ def train_cl(nums=5001):
 
         if i % 100 == 0:
             print("第 {} 次训练的损失是 {}".format(i, np.mean(loss_his[-100:])))
+    plt.figure(1)
     plt.plot(np.arange(len(loss_his)), loss_his)
     plt.show()
 
@@ -150,6 +152,7 @@ def eval_cl():
     feat = clen(cl_his)
     X = feat.detach().numpy()
     X_embedded = TSNE(n_components=2).fit_transform(X)
+    plt.figure(2)
     plt.scatter(X_embedded[:, 0], X_embedded[:, 1])
     plt.title("CL")
     plt.show()
@@ -179,7 +182,10 @@ def train_embedding(nums=10):
         print("第 {} 次的 loss 是 {}".format(i+1, loss.item()))
 
     X = embedding.weight.detach().numpy()
+    if save_embedding:
+        np.save("embedding.npy", X)
     X_embedded = TSNE(n_components=2).fit_transform(X)
+    plt.figure(3)
     plt.scatter(X_embedded[:, 0], X_embedded[:, 1])
     plt.title("Embedding")
     plt.show()
@@ -198,7 +204,8 @@ def train_pp(nums=1001):
         # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
         KLD_s0 = -0.5 * torch.sum(1 + s0_log_sigma - s0_mu.pow(2) - s0_log_sigma.exp())
         KLD_ss = -0.5 * torch.sum(1 + ss_log_sigma - ss_mu.pow(2) - ss_log_sigma.exp())
-        loss = torch.dist(pp_hat, X_his, p=0) + 0.001 * (KLD_s0 + KLD_ss)
+        # loss = 0.0001 * (torch.dist(pp_hat, X_his, p=0) + KLD_s0 + KLD_ss)
+        loss = torch.dist(pp_hat, X_his)
 
         pp_optimizer.zero_grad()
         loss.backward()
@@ -223,7 +230,7 @@ def train():
         train_pp()
 
 
-train()
+# train()
 # pid_collector(nums=2000, save_pid_data=True)
 
 
