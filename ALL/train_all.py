@@ -198,7 +198,7 @@ def train_pp(nums=1001):
         # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
         KLD_s0 = -0.5 * torch.sum(1 + s0_log_sigma - s0_mu.pow(2) - s0_log_sigma.exp())
         KLD_ss = -0.5 * torch.sum(1 + ss_log_sigma - ss_mu.pow(2) - ss_log_sigma.exp())
-        loss = torch.dist(pp_hat, X_his) + KLD_s0 + KLD_ss
+        loss = 0.001 * torch.dist(pp_hat, X_his) + KLD_s0 + KLD_ss
 
         pp_optimizer.zero_grad()
         loss.backward()

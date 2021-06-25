@@ -34,3 +34,5 @@ Pre-skills/n_his.npy
 Pre-skills/negatives.npy
 Pre-skills/p_his.npy
 Pre-skills/positives.npy
+ALL/aa_his.npy
+*.npy
