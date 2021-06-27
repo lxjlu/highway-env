@@ -19,7 +19,7 @@ clde = torch.load("de_model.pkl")
 em = np.load("embedding.npy")
 em = torch.Tensor(em)
 
-z = torch.LongTensor([0])
+z = torch.LongTensor([8])
 hidden = em[z.item()]
 hidden = hidden.unsqueeze(0)
 
@@ -30,11 +30,11 @@ lanes_count = env.config["lanes_count"]
 lane_id = np.random.choice(np.arange(lanes_count))
 v_lane_id = ("a", "b", 1)
 # positon_x = np.random.choice(np.arange(0, env.road.network.get_lane(v_lane_id).length, 5))
-positon_x = 10
-positon_y = np.random.choice(np.arange(-2, 2.1, 0.5))
+positon_x = 0
+# positon_y = np.random.choice(np.arange(-2, 2.1, 0.5))
 positon_y = 0
 heading = env.road.network.get_lane(v_lane_id).heading_at(positon_x)
-speed = 15
+speed = 10
 env.config["v_x"] = positon_x
 env.config["v_y"] = positon_y
 env.config["v_h"] = heading
@@ -77,17 +77,13 @@ def get_hat(env, z):
 
 s0, ss, s_hat, u_hat, x_f = get_hat(env, z)
 
-
+action, u_e, x_e = get_first_action(s0, u_hat, s_hat, z.item(), x_f)
 
 
 for i in range(N):
-    # print("z is ", z.item())
-    action, u_e, x_e = get_first_action(s0, u_hat, s_hat, z.item(), x_f)
-    # print("mult shooting action is ", action)
+    action = u_e[i, :]
+
     obs, reward, terminal, info = env.step(action)
-    # if i > 2:
-    #     z = torch.LongTensor([4])
-    s0, ss, s_hat, u_hat, x_f = get_hat(env, z)
     env.render()
     time.sleep(0.1)
 env.close()

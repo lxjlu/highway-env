@@ -42,7 +42,7 @@ def get_first_action(s0, u_hat, s_hat, z, x_f):
     ## 不同z对应不同的参数
     zz = z // 3
     if zz == 1:
-        Q = np.array([[1.0, 0.0, 0.0, 0.0], [0.0, 5.0, 0.0, 0.0], [0.0, 0.0, .1, 0.0], [0.0, 0.0, 0.0, 1.0]])
+        Q = np.array([[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, .5, 0.0], [0.0, 0.0, 0.0, 0.5]])
         R = np.array([[0.5, 0.0], [0.0, 0.05]])
     else:
         Q = np.array([[1.0, 0.0, 0.0, 0.0], [0.0, 5.0, 0.0, 0.0], [0.0, 0.0, .1, 0.0], [0.0, 0.0, 0.0, 1.0]])
@@ -54,7 +54,8 @@ def get_first_action(s0, u_hat, s_hat, z, x_f):
     g.append(X[:, 0] - P[:4])
 
     for i in range(N):
-        obj = obj + ca.mtimes([(X[:, i] - P[4:]).T, Q, X[:, i] - P[4:]]) + ca.mtimes([U[:, i].T, R, U[:, i]])
+        obj = obj + ca.mtimes([(X[:, i] - P[4:]).T, Q, X[:, i] - P[4:]]) \
+              # + ca.mtimes([U[:, i].T, R, U[:, i]])
         x_next_ = f(X[:, i], U[:, i]) * T + X[:, i]
         g.append(X[:, i + 1] - x_next_)
 

@@ -198,7 +198,7 @@ def train_embedding(nums=10):
     plt.title("Embedding")
     plt.show()
 
-def train_pp(nums=5001):
+def train_pp(nums=8001):
     for i in range(nums):
         z_his, u_his, s0_his, X_his, ss_his, cl_his = bf.sample(512)
         s0_his = torch.Tensor(s0_his)
@@ -208,10 +208,14 @@ def train_pp(nums=5001):
         X_his = torch.Tensor(X_his)
         embedds = embedding.weight
         pp_hat, s0_mu, ss_mu, s0_log_sigma, ss_log_sigma = clpp(s0_his, ss_his, labels_his, embedds)
+        X_F = X_his.reshape(512, -1, 50)
+        X_F = X_F[:, :, -1]
+        pp_F = pp_hat.reshape(512, -1, 50)
+        pp_F = pp_F[:, :, -1]
         # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
         KLD_s0 = -0.5 * torch.sum(1 + s0_log_sigma - s0_mu.pow(2) - s0_log_sigma.exp())
         KLD_ss = -0.5 * torch.sum(1 + ss_log_sigma - ss_mu.pow(2) - ss_log_sigma.exp())
-        loss =torch.dist(pp_hat, X_his) + 0.001 * (KLD_s0 + KLD_ss)
+        loss =torch.dist(pp_hat, X_his) + 0.001 * (KLD_s0 + KLD_ss) + 2000 * torch.dist(X_F, pp_F)
         # loss = torch.dist(pp_hat, X_his)
 
         pp_optimizer.zero_grad()

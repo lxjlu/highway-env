@@ -88,7 +88,7 @@ class PP(nn.Module):
 clpp = PP()
 pp_optimizer = optim.Adam(clpp.parameters(), lr=1e-5)
 
-for i in range(5001):
+for i in range(10001):
     z_his, u_his, s0_his, X_his, ss_his, cl_his = bf.sample(512)
     s0_his = torch.Tensor(s0_his)
     ss_his = torch.Tensor(ss_his)
@@ -97,11 +97,13 @@ for i in range(5001):
     pp_hat, s0_mu, ss_mu, s0_log_sigma, ss_log_sigma = clpp(s0_his, ss_his, labels_his)
     X_F = X_his.reshape(512, -1, 50)
     X_F = X_F[:, :, -1]
+    pp_F = pp_hat.reshape(512, -1, 50)
+    pp_F = pp_F[:, :, -1]
     # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
     KLD_s0 = -0.5 * torch.sum(1 + s0_log_sigma - s0_mu.pow(2) - s0_log_sigma.exp())
     KLD_ss = -0.5 * torch.sum(1 + ss_log_sigma - ss_mu.pow(2) - ss_log_sigma.exp())
     # loss = 0.0001 * (torch.dist(pp_hat, X_his, p=0) + KLD_s0 + KLD_ss)
-    loss = torch.dist(pp_hat, X_his) + 0.001 * (KLD_s0 + KLD_ss)
+    loss = torch.dist(pp_hat, X_his) + 0.0001 * (KLD_s0 + KLD_ss) + 2000 * torch.dist(X_F, pp_F)
     pp_optimizer.zero_grad()
     loss.backward()
     pp_optimizer.step()
