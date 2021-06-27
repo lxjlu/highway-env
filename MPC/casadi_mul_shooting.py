@@ -10,9 +10,7 @@ N = 50  # prediction horizon
 accel_max = 1
 omega_max = np.pi/6
 
-def get_first_action(u_hat: torch.Tensor, s_hat: torch.Tensor, z):
-    u_hat = u_hat.item()
-    s_hat = s_hat.item()
+def get_first_action(s0, u_hat, s_hat, z, x_f):
 
     x = ca.SX.sym('x')
     y = ca.SX.sym('y')
@@ -53,10 +51,10 @@ def get_first_action(u_hat: torch.Tensor, s_hat: torch.Tensor, z):
     ## cost function
     obj = 0
     g = []  # equal constrains
-    g.append(X[:, 0] - P[:, 3])
+    g.append(X[:, 0] - P[:4])
 
     for i in range(N):
-        obj = obj + ca.mtimes([(X[:, i] - P[3:]).T, Q, X[:, i] - P[3:]]) + ca.mtimes([U[:, i].T, R, U[:, i]])
+        obj = obj + ca.mtimes([(X[:, i] - P[4:]).T, Q, X[:, i] - P[4:]]) + ca.mtimes([U[:, i].T, R, U[:, i]])
         x_next_ = f(X[:, i], U[:, i]) * T + X[:, i]
         g.append(X[:, i + 1] - x_next_)
 
@@ -88,23 +86,23 @@ def get_first_action(u_hat: torch.Tensor, s_hat: torch.Tensor, z):
         ubx.append(np.inf)
         ubx.append(np.inf)
 
-    x0 = np.array([0.0, 0.0, 0.0, 0.0]).reshape(-1, 1)# initial state
+    x0 = s0.reshape(-1, 1)# initial state
 
-    x_m = np.zeros((n_states, N + 1))
+    # x_m = np.zeros((n_states, N + 1))
+    dd = np.expand_dims(s0, axis=1)
+    tt = s_hat.reshape(4, 50)
+    x_m = np.concatenate((dd, tt), axis=1)
+
+    # x_m = s_hat.reshape(n_states, N + 1)
     next_states = x_m.copy().T
-    xs = np.array([1.5, 1.5, 0.0]).reshape(-1, 1)  # final state
-    u0 = np.array([1, 2] * N).reshape(-1, 2).T  # np.ones((N, 2)) # controls
+    xs = x_f.reshape(-1, 1)  # final state
+    u0 = u_hat.reshape(-1, 2).T  # np.ones((N, 2)) # controls
 
     c_p = np.concatenate((x0, xs))
     init_control = np.concatenate((u0.reshape(-1, 1), next_states.reshape(-1, 1)))
     res = solver(x0=init_control, p=c_p, lbg=lbg, lbx=lbx, ubg=ubg, ubx=ubx)
     estimated_opt = res['x'].full()  # the feedback is in the series [u0, x0, u1, x1, ...]
-    u0 = estimated_opt[:200].reshape(N, n_controls)  # (N, n_controls)
-    x_m = estimated_opt[200:].reshape(N + 1, n_states)  # (N+1, n_states)
+    u0 = estimated_opt[:100].reshape(N, n_controls)  # (N, n_controls)
+    x_m = estimated_opt[100:].reshape(N + 1, n_states)  # (N+1, n_states)
 
-    return u0, x_m
-
-
-
-
-
+    return u0[0,:], u0, x_m

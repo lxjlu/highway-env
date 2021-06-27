@@ -22,7 +22,7 @@ class MyEnv(AbstractEnv):
                 "type": "Kinematics",
             },
             "action": {
-                "type": "DiscreteMetaAction",
+                "type": "ContinuousAction",
             },
             "lanes_count": 3,
             "policy_frequency": 10,
@@ -51,7 +51,8 @@ class MyEnv(AbstractEnv):
             "KP_LATERAL": 3,
             "TAU_PURSUIT": 0.1,
 
-            "radius": np.random.choice([25, 50, 100, 250, 500, 1000])
+            # "radius": np.random.choice([25, 50, 100, 250, 500, 1000]),
+            "radius": np.random.choice([1000]),
         })
         return config
 

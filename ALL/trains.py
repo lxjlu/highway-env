@@ -8,6 +8,10 @@ import numpy as np
 
 from nets import ReplayBuffer
 
+"""
+用来排除AVE loss中的nan问题：原因是exp()太大，所以要在logvar输出中加入
+初始化权重，使得不那么大
+"""
 load_pid = True
 bf = ReplayBuffer(load_pid)
 em = np.load("embedding.npy")
@@ -26,6 +30,7 @@ class PP(nn.Module):
         )
         self.s0_mu = nn.Linear(400, 2)
         self.s0_log_sigma = nn.Linear(400, 2)
+        torch.nn.init.uniform_(self.s0_log_sigma.weight, a=-0.0001, b=0.0001)
 
         self.ss_encoder = nn.Sequential(
             nn.Linear(22, 400),
@@ -35,13 +40,14 @@ class PP(nn.Module):
         )
         self.ss_mu = nn.Linear(400, 8)
         self.ss_log_sigma = nn.Linear(400, 8)
+        torch.nn.init.uniform_(self.ss_log_sigma.weight, a=-0.0001, b=0.0001)
 
         self.predict = nn.Sequential(
             nn.Linear(2 + 8 + 24, 400),
             nn.ReLU(),
             nn.Linear(400, 400),
             nn.ReLU(),
-            nn.Linear(400, 4)
+            nn.Linear(400, 200)
         )
 
     def get_s0(self, s0):
@@ -70,10 +76,10 @@ class PP(nn.Module):
 
 
     def reparameterize(self, mu, logvar):
-        # std = torch.exp(0.5 * logvar)
-        # eps = torch.randn_like(std)
-        std = logvar.mul(0.5).exp_()
-        eps = Variable(std.data.new(std.size()).normal_())
+        std = torch.exp(0.5 * logvar)
+        eps = torch.randn_like(std)
+        # std = logvar.mul(0.5).exp_()
+        # eps = Variable(std.data.new(std.size()).normal_())
         return eps.mul(std).add_(mu)
 
 
@@ -95,7 +101,7 @@ for i in range(5001):
     KLD_s0 = -0.5 * torch.sum(1 + s0_log_sigma - s0_mu.pow(2) - s0_log_sigma.exp())
     KLD_ss = -0.5 * torch.sum(1 + ss_log_sigma - ss_mu.pow(2) - ss_log_sigma.exp())
     # loss = 0.0001 * (torch.dist(pp_hat, X_his, p=0) + KLD_s0 + KLD_ss)
-    loss = torch.dist(pp_hat, X_F) + 0.0001 * (KLD_s0 + KLD_ss)
+    loss = torch.dist(pp_hat, X_his) + 0.001 * (KLD_s0 + KLD_ss)
     pp_optimizer.zero_grad()
     loss.backward()
     pp_optimizer.step()

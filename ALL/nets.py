@@ -6,6 +6,7 @@ import numpy as np
 import collections
 import random
 import os
+from torch.autograd import Variable
 
 
 class ReplayBuffer():
@@ -132,35 +133,31 @@ class CLLoss(nn.Module):
 
 class CLPP(nn.Module):
 
-    def __init__(self, s0_hidden_size=128, ss_hidden_size=256, output_size=200):
+    def __init__(self, eval=False):
         super(CLPP, self).__init__()
-
-        self.s0_hidden_size = s0_hidden_size
-        self.ss_hidden_size = ss_hidden_size
-        self.output_size = output_size
-
+        self.eval = eval
         self.s0_encoder = nn.Sequential(
-            nn.Linear(4, self.s0_hidden_size),
+            nn.Linear(4, 400),
             nn.ReLU(),
-            nn.Linear(self.s0_hidden_size, self.s0_hidden_size),
-            nn.ReLU(),
-            # nn.Linear(self.hidden_size, 4)
+            nn.Linear(400, 400),
+            nn.ReLU()
         )
-        self.s0_mu = nn.Linear(self.s0_hidden_size, 4)
-        self.s0_log_sigma = nn.Linear(self.s0_hidden_size, 4)
+        self.s0_mu = nn.Linear(400, 2)
+        self.s0_log_sigma = nn.Linear(400, 2)
+        torch.nn.init.uniform_(self.s0_log_sigma.weight, a=-0.0001, b=0.0001)
 
         self.ss_encoder = nn.Sequential(
-            nn.Linear(22, self.ss_hidden_size),
+            nn.Linear(22, 400),
             nn.ReLU(),
-            nn.Linear(self.ss_hidden_size, self.ss_hidden_size),
-            nn.ReLU(),
-            # nn.Linear(self.hidden_size, 4)
+            nn.Linear(400, 400),
+            nn.ReLU()
         )
-        self.ss_mu = nn.Linear(self.ss_hidden_size, 12)
-        self.ss_log_sigma = nn.Linear(self.ss_hidden_size, 12)
+        self.ss_mu = nn.Linear(400, 8)
+        self.ss_log_sigma = nn.Linear(400, 8)
+        torch.nn.init.uniform_(self.ss_log_sigma.weight, a=-0.0001, b=0.0001)
 
         self.predict = nn.Sequential(
-            nn.Linear(4 + 12 + 24, 400),
+            nn.Linear(2 + 8 + 24, 400),
             nn.ReLU(),
             nn.Linear(400, 400),
             nn.ReLU(),
@@ -179,18 +176,61 @@ class CLPP(nn.Module):
         z = self.reparameterize(ss_mu, ss_log_sigma)
         return z, ss_mu, ss_log_sigma
 
-    def forward(self, s0, ss, labels, embedding, skills):
+    def forward(self, s0, ss, labels, em):
         labels = labels.type(torch.LongTensor)
-        labels = F.one_hot(labels)
-        labels = labels.type(dtype=skills.dtype)
-        skills = torch.matmul(labels, embedding.detach())
+        labels = F.one_hot(labels, 9) # 会不会有影响？？
+        labels = labels.type(torch.float)
+        skills = torch.matmul(labels, em.detach())
         s0, s0_mu, s0_log_sigma = self.get_s0(s0)
         ss, ss_mu, ss_log_sigma = self.get_ss(ss)
 
-        pp_hat = self.predict(torch.cat((s0, ss, skills), 1))
+        if self.eval:
+            pp_hat = self.predict(torch.cat((s0_mu, ss_mu, skills), 1))
+        else:
+            pp_hat = self.predict(torch.cat((s0, ss, skills), 1))
         return pp_hat, s0_mu, ss_mu, s0_log_sigma, ss_log_sigma
 
     def reparameterize(self, mu, logvar):
         std = torch.exp(0.5 * logvar)
         eps = torch.randn_like(std)
+        # std = logvar.mul(0.5).exp_()
+        # eps = Variable(std.data.new(std.size()).normal_())
         return eps.mul(std).add_(mu)
+
+class CLDeconder(nn.Module):
+
+    def __init__(self):
+        super(CLDeconder, self).__init__()
+
+        self.deconder = nn.Sequential(
+            nn.Linear(4+22+24, 400),
+            nn.ReLU(),
+            nn.Linear(400, 400),
+            nn.ReLU(),
+            nn.Linear(400, 100),
+        )
+
+    def forward(self, s0, ss, hidden):
+        actions = self.deconder(torch.cat((s0, ss, hidden), 1))
+
+        return actions
+
+
+class ActionNet(nn.Module):
+    def __init__(self, num_goal_states=2, num_around_states=4):
+        super(ActionNet, self).__init__()
+
+        self.action_prob = nn.Sequential(
+            nn.Linear(num_goal_states+num_around_states, 400),
+            nn.ReLU(),
+            nn.Linear(400, 400),
+            nn.ReLU(),
+            nn.Linear(400, 9),
+            nn.Sigmoid()
+        )
+
+    def forward(self, g, s):
+        prob = self.action_prob(torch.cat((g, s), 1))
+        z = torch.argmax(prob)
+        return z, prob
+

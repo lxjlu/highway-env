@@ -1,0 +1,100 @@
+import casadi as ca
+import casadi.tools as ca_tools
+import gym
+import highway_env
+import numpy as np
+import torch
+from nets import CLPP
+from MPC.casadi_mul_shooting import get_first_action
+import time
+
+T = 0.1  # sampling time [s]
+N = 50  # prediction horizon
+
+accel_max = 1
+omega_max = np.pi/6
+clpp = torch.load("pp_model.pkl")
+clpp.eval = True
+clde = torch.load("de_model.pkl")
+em = np.load("embedding.npy")
+em = torch.Tensor(em)
+
+z = torch.LongTensor([0])
+hidden = em[z.item()]
+hidden = hidden.unsqueeze(0)
+
+env = gym.make("myenv-r1-v0")
+labels_index = np.arange(9).reshape(3, 3)
+N = 50
+lanes_count = env.config["lanes_count"]
+lane_id = np.random.choice(np.arange(lanes_count))
+v_lane_id = ("a", "b", 1)
+# positon_x = np.random.choice(np.arange(0, env.road.network.get_lane(v_lane_id).length, 5))
+positon_x = 10
+positon_y = np.random.choice(np.arange(-2, 2.1, 0.5))
+positon_y = 0
+heading = env.road.network.get_lane(v_lane_id).heading_at(positon_x)
+speed = 15
+env.config["v_x"] = positon_x
+env.config["v_y"] = positon_y
+env.config["v_h"] = heading
+env.config["v_s"] = speed
+env.config["v_lane_id"] = v_lane_id
+
+env.reset()
+
+def get_hat(env, z):
+    p = env.vehicle.position
+    i_h = env.vehicle.heading
+    i_s = env.vehicle.speed
+    s0 = [p[0], p[1], i_h, i_s]
+    s0 = np.array(s0)
+    s0 = torch.Tensor(s0)
+    s0 = s0.unsqueeze(0)
+    x_road, y_road = env.vehicle.target_lane_position(p)
+    ss = x_road + y_road
+    ss = np.array(ss)
+    ss = torch.Tensor(ss)
+    ss = ss.unsqueeze(0)
+
+    label = z
+    s_hat, _, _, _, _ = clpp(s0, ss, label, em)
+    u_hat = clde(s0, ss, hidden)
+    s_hat = s_hat.squeeze(0)
+    u_hat = u_hat.squeeze(0)
+    s0 = s0.squeeze(0)
+    s_hat = s_hat.detach().cpu().numpy()
+    u_hat = u_hat.detach().cpu().numpy()
+    s0 = s0.detach().cpu().numpy()
+
+    x_f = s_hat.reshape(4, 50)[:, -1]
+    x_f_local_x, x_f_local_y = env.road.network.get_lane(v_lane_id).local_coordinates(np.array([x_f[0], x_f[1]]))
+    x_f_local_y = np.clip(x_f_local_y, -4, 4)
+    x_f_xy = env.road.network.get_lane(v_lane_id).position(x_f_local_x, x_f_local_y)
+    x_f[0] = x_f_xy[0]
+    x_f[1] = x_f_xy[1]
+    return s0, ss, s_hat, u_hat, x_f
+
+s0, ss, s_hat, u_hat, x_f = get_hat(env, z)
+
+
+
+
+for i in range(N):
+    # print("z is ", z.item())
+    action, u_e, x_e = get_first_action(s0, u_hat, s_hat, z.item(), x_f)
+    # print("mult shooting action is ", action)
+    obs, reward, terminal, info = env.step(action)
+    # if i > 2:
+    #     z = torch.LongTensor([4])
+    s0, ss, s_hat, u_hat, x_f = get_hat(env, z)
+    env.render()
+    time.sleep(0.1)
+env.close()
+
+
+
+
+
+
+

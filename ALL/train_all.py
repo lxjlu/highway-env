@@ -5,21 +5,29 @@ import time
 import matplotlib.pyplot as plt
 import torch
 import torch.optim as optim
-from nets import ReplayBuffer, CLEncoder, CLLoss, CLPP
+import torch.nn.functional as F
+from nets import ReplayBuffer, CLEncoder, CLLoss, CLPP, CLDeconder, ActionNet
 from sklearn.manifold import TSNE
 
 save_pid_data = False
 load_pid = True
-save_embedding = False
+save_embedding = True
 
 bf = ReplayBuffer(load_pid)
 clen = CLEncoder()
 clloss = CLLoss()
 clpp = CLPP()
+clde = CLDeconder()
+actor = ActionNet()
+
 embedding = torch.nn.Embedding(9, 24)
 cl_optimizer = optim.Adam(clen.parameters(), lr=1e-3)
 em_optimizer = optim.Adam(embedding.parameters(), lr=1e-3)
 pp_optimizer = optim.Adam(clpp.parameters(), lr=1e-4)
+de_optimizer = optim.Adam(clde.parameters(), lr=1e-4)
+
+
+actor_optimizer = optim.Adam(actor.parameters(), lr=1e-3)
 
 
 def pid_collector(nums=10000, save_pid_data=False):
@@ -190,22 +198,21 @@ def train_embedding(nums=10):
     plt.title("Embedding")
     plt.show()
 
-def train_pp(nums=1001):
+def train_pp(nums=5001):
     for i in range(nums):
         z_his, u_his, s0_his, X_his, ss_his, cl_his = bf.sample(512)
         s0_his = torch.Tensor(s0_his)
         ss_his = torch.Tensor(ss_his)
         cl_his = torch.Tensor(cl_his)
-        labes_his = torch.Tensor(z_his)
+        labels_his = torch.Tensor(z_his)
         X_his = torch.Tensor(X_his)
         embedds = embedding.weight
-        hidden = clen(cl_his)
-        pp_hat, s0_mu, ss_mu, s0_log_sigma, ss_log_sigma = clpp(s0_his, ss_his, labes_his, embedds, hidden)
+        pp_hat, s0_mu, ss_mu, s0_log_sigma, ss_log_sigma = clpp(s0_his, ss_his, labels_his, embedds)
         # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
         KLD_s0 = -0.5 * torch.sum(1 + s0_log_sigma - s0_mu.pow(2) - s0_log_sigma.exp())
         KLD_ss = -0.5 * torch.sum(1 + ss_log_sigma - ss_mu.pow(2) - ss_log_sigma.exp())
-        # loss = 0.0001 * (torch.dist(pp_hat, X_his, p=0) + KLD_s0 + KLD_ss)
-        loss = torch.dist(pp_hat, X_his)
+        loss =torch.dist(pp_hat, X_his) + 0.001 * (KLD_s0 + KLD_ss)
+        # loss = torch.dist(pp_hat, X_his)
 
         pp_optimizer.zero_grad()
         loss.backward()
@@ -214,6 +221,45 @@ def train_pp(nums=1001):
         if i % 100 == 0:
             print("第 {} 次的 loss 是 {}".format(i + 1, loss.item()))
 
+def train_de(nums=5001):
+    for i in range(nums):
+        z_his, u_his, s0_his, X_his, ss_his, cl_his = bf.sample(512)
+        s0_his = torch.Tensor(s0_his)
+        ss_his = torch.Tensor(ss_his)
+        cl_his = torch.Tensor(cl_his)
+        labels_his = torch.Tensor(z_his)
+        X_his = torch.Tensor(X_his)
+        u_his = torch.Tensor(u_his)
+
+        labels = labels_his.type(torch.LongTensor)
+        labels = F.one_hot(labels)
+        labels = labels.type(torch.float)
+        skills = torch.matmul(labels, embedding.weight.detach())
+
+        actions = clde(s0_his, ss_his, skills)
+        feat = clen(torch.cat((s0_his, ss_his, actions), 1))
+
+        # labels_his_hat = torch.argmin(torch.cdist(feat, embedding.weight.detach()), dim=1, keepdim=True)
+        labels_his_hat = torch.argmin(torch.cdist(feat, embedding.weight.detach()), dim=1)
+        # re_loss = F.mse_loss(labels_his_hat, labels_his)
+        re_loss = torch.dist(u_his, actions)
+        norm_loss = actions.norm(dim=1).sum()
+        loss = re_loss + 0.001 * norm_loss
+
+        if i % 100 == 0:
+            print("第 {} 次的 loss 是 {}".format(i + 1, loss.item()))
+
+        de_optimizer.zero_grad()
+        loss.backward()
+        de_optimizer.step()
+
+def get_first_action(s0, ss, z, em):
+    hidden = embedding.weight[z]
+    s_hat = clpp(s0, ss, z, em)
+    u_hat = clde(s0, ss, embedding.weight[z])
+
+
+
 
 def train():
     global_step = 1
@@ -221,16 +267,32 @@ def train():
     #     pid_collector()
     #     print("=======PID 数据收集完成=======")
     if global_step % 5000 == 1:
+        print("=======开始训练对比网络=======")
         train_cl()
-        print("=======训练了对比网络=======")
+        print("=======对比网络训练完成=======")
+        print("===============================")
+        print("=======开始测试对比网络=======")
         eval_cl()
         print("========显示对比效果========")
+        print("===============================")
+        print("========开始训练隐藏空间========")
         train_embedding()
         print("========隐藏空间训练完成========")
+        print("===============================")
+        print("========开始训练预测网络========")
         train_pp()
+        print("========预测网络训练完成========")
+        print("===============================")
+        print("========开始训练解码网络========")
+        train_de()
 
 
-# train()
+
+
+train()
+torch.save(clpp, 'pp_model.pkl')
+torch.save(clde, 'de_model.pkl')
+
 # pid_collector(nums=2000, save_pid_data=True)
 
 

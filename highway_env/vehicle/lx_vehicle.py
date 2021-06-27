@@ -106,7 +106,7 @@ class LxVehicle(Vehicle):
         x, y = target_lane.position(lane_coords[0], 0)
         return x, y
 
-    def act(self, action: Union[dict, str] = None) -> None:
+    def act(self, action: Union[dict, str] = None, PID=False) -> None:
         """
         Perform a high-level action to change the desired lane or speed.
 
@@ -130,10 +130,10 @@ class LxVehicle(Vehicle):
         #     target_lane_index = _from, _to, np.clip(_id - 1, 0, len(self.road.network.graph[_from][_to]) - 1)
         #     if self.road.network.get_lane(target_lane_index).is_reachable_from(self.position):
         #         self.target_lane_index = target_lane_index
-
-        action = {"steering": self.steering_control(self.target_lane_index),
-                  "acceleration": self.speed_control(self.target_speed)}
-        action['steering'] = np.clip(action['steering'], -self.MAX_STEERING_ANGLE, self.MAX_STEERING_ANGLE)
+        if PID:
+            action = {"steering": self.steering_control(self.target_lane_index),
+                      "acceleration": self.speed_control(self.target_speed)}
+            action['steering'] = np.clip(action['steering'], -self.MAX_STEERING_ANGLE, self.MAX_STEERING_ANGLE)
         super().act(action)
 
     def follow_road(self) -> None:
