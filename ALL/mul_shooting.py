@@ -79,8 +79,9 @@ def get_hat(env, z):
 s0, ss, s_hat, u_hat, x_f = get_hat(env, z)
 
 action, u_e, x_e = get_first_action(s0, u_hat, s_hat, z.item(), x_f)
-plt.plot(x_e[:, 0], x_e[:, 1])
-plt.show()
+
+# plt.plot(x_e[:, 0], x_e[:, 1])
+# plt.show()
 
 # for i in range(N):
 #     action = u_e[i, :]
