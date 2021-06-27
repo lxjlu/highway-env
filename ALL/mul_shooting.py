@@ -7,6 +7,7 @@ import torch
 from nets import CLPP
 from MPC.casadi_mul_shooting import get_first_action
 import time
+import matplotlib.pyplot as plt
 
 T = 0.1  # sampling time [s]
 N = 50  # prediction horizon
@@ -78,15 +79,16 @@ def get_hat(env, z):
 s0, ss, s_hat, u_hat, x_f = get_hat(env, z)
 
 action, u_e, x_e = get_first_action(s0, u_hat, s_hat, z.item(), x_f)
+plt.plot(x_e[:, 0], x_e[:, 1])
+plt.show()
 
-
-for i in range(N):
-    action = u_e[i, :]
-
-    obs, reward, terminal, info = env.step(action)
-    env.render()
-    time.sleep(0.1)
-env.close()
+# for i in range(N):
+#     action = u_e[i, :]
+#
+#     obs, reward, terminal, info = env.step(action)
+#     env.render()
+#     time.sleep(0.1)
+# env.close()
 
 
 
