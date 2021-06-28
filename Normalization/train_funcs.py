@@ -8,21 +8,21 @@ import torch.optim as optim
 import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
 
-"""
+
 bf = ReplayBuffer(load_pid=True)
-clen = CLEncoder()
-clloss = CLLoss()
+# clen = CLEncoder()
+# clloss = CLLoss()
 clpp = CLPP()
-"""
-# clen = torch.load("clen_model.pkl")
-# clloss = torch.load("clloss_model.pkl")
-"""
-embedding = torch.nn.Embedding(9, 24)
-cl_optimizer = optim.Adam(clen.parameters(), lr=1e-3)
-em_optimizer = optim.Adam(embedding.parameters(), lr=1e-3)
+
+clen = torch.load("clen_model.pkl")
+clloss = torch.load("clloss_model.pkl")
+
+# embedding = torch.nn.Embedding(9, 24)
+# cl_optimizer = optim.Adam(clen.parameters(), lr=1e-3)
+# em_optimizer = optim.Adam(embedding.parameters(), lr=1e-3)
 pp_optimizer = optim.Adam(clpp.parameters(), lr=1e-3)
-# em = np.load("embedding.npy")
-"""
+em = np.load("embedding.npy")
+
 
 def pid_collector(nums=10000, save_pid_data=False, bf=None):
     s0_his, ss_his, aa_his, tt_his, pp_his, label_his = [], [], [], [], [], []
@@ -225,7 +225,7 @@ def train_embedding(nums=10, save_embedding=False):
     plt.title("Embedding")
     plt.show()
 
-def train_pp(nums=8001, save_model=False):
+def train_pp(nums=10001, save_model=False):
     for i in range(nums):
         z_his, u_his, s0_his, X_his, ss_his, cl_his = bf.sample(512)
         s0_his = torch.Tensor(s0_his)
@@ -233,7 +233,8 @@ def train_pp(nums=8001, save_model=False):
         cl_his = torch.Tensor(cl_his)
         labels_his = torch.Tensor(z_his)
         X_his = torch.Tensor(X_his)
-        embedds = embedding.weight
+        # embedds = embedding.weight
+        embedds = torch.Tensor(em)
         pp_hat, s0_mu, ss_mu, s0_log_sigma, ss_log_sigma = clpp(s0_his, ss_his, labels_his, embedds)
         X_F = X_his.reshape(512, -1, 50)
         X_F = X_F[:, :, -1]
@@ -242,7 +243,7 @@ def train_pp(nums=8001, save_model=False):
         # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
         KLD_s0 = -0.5 * torch.sum(1 + s0_log_sigma - s0_mu.pow(2) - s0_log_sigma.exp())
         KLD_ss = -0.5 * torch.sum(1 + ss_log_sigma - ss_mu.pow(2) - ss_log_sigma.exp())
-        loss =torch.dist(pp_hat, X_his) + 0.001 * (KLD_s0 + KLD_ss) + 2000 * torch.dist(X_F, pp_F)
+        loss = torch.dist(pp_hat, X_his) + 0.05 * (KLD_s0 + KLD_ss) + 2000 * torch.dist(X_F, pp_F)
         # loss = torch.dist(pp_hat, X_his)
 
         pp_optimizer.zero_grad()
@@ -255,9 +256,9 @@ def train_pp(nums=8001, save_model=False):
     if save_model:
         torch.save(clpp, "clpp_model.pkl")
 
-pid_collector(save_pid_data=True) # 用来离线收集PID数据
-# train_cl()
+# pid_collector(nums=5000, save_pid_data=True) # 用来离线收集PID数据
+# train_cl(save_model=True)
 # eval_cl()
 # train_embedding(save_embedding=False)
 
-# train_pp()
+train_pp(save_model=True)
