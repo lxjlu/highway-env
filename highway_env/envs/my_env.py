@@ -52,8 +52,8 @@ class MyEnv(AbstractEnv):
             "KP_LATERAL": 3,
             "TAU_PURSUIT": 0.1,
 
-            # "radius": np.random.choice([25, 50, 100, 250, 500, 1000]),
-            "radius": np.random.choice([250]),
+            "radius": np.random.choice([25, 50, 100, 250, 500, 1000]),
+            # "radius": np.random.choice([250]),
         })
         return config
 

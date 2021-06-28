@@ -85,7 +85,7 @@ class LxVehicle(Vehicle):
             self.route = [self.lane_index]
         return self
 
-    def target_lane_position(self, initial_position):
+    def target_lane_position(self, initial_position, road_r):
         target_lane = self.road.network.get_lane(self.target_lane_index)
         lane_coords = target_lane.local_coordinates(initial_position)
         # x_r = lane_coords[0] + np.arange(0, 301, 10)
@@ -94,14 +94,18 @@ class LxVehicle(Vehicle):
         x_r = lane_coords[0]
         y_r = 0
         lane_x = []
+        lane_x_n = []
         lane_y = []
+        lane_y_n = []
         for item in np.arange(0, 101, 10):
             xx, yy = target_lane.position(x_r + item, 0)
-            xx = lmap(xx, [-254, 254], [-1, 1])
-            yy = lmap(yy, [0, 508], [-1, 1])
+            xx_n = lmap(xx, [-(road_r+4), (road_r+4), 254], [-1, 1])
+            yy_n = lmap(yy, [0, 2*(road_r+4)], [-1, 1])
             lane_x.append(xx)
+            lane_x_n.append(xx_n)
             lane_y.append(yy)
-        return lane_x, lane_y
+            lane_y_n.append(yy_n)
+        return lane_x, lane_y, lane_x_n, lane_y_n
 
     def target_lane2_position(self):
         target_lane = self.road.network.get_lane(self.target_lane_index)
