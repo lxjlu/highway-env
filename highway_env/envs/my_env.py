@@ -22,7 +22,8 @@ class MyEnv(AbstractEnv):
                 "type": "Kinematics",
             },
             "action": {
-                "type": "ContinuousAction",
+                # "type": "ContinuousAction",
+                "type": "DiscreteMetaAction",
             },
             "lanes_count": 3,
             "policy_frequency": 10,
@@ -62,7 +63,7 @@ class MyEnv(AbstractEnv):
         radius = self.config["radius"]  # [m]
         # radius = np.random.choice([50, 500])  # [m]
         # radius = np.random.choice([50, 200, 500, 1000])  # [m]
-        center = [10, StraightLane.DEFAULT_WIDTH + radius]  # [m]
+        center = [0, StraightLane.DEFAULT_WIDTH + radius]  # [m]
         alpha = 0  # [deg]
         radii = [radius, radius + StraightLane.DEFAULT_WIDTH,
                  radius + 2 * StraightLane.DEFAULT_WIDTH]

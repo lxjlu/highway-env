@@ -42,11 +42,11 @@ def get_first_action(s0, u_hat, s_hat, z, x_f):
     ## 不同z对应不同的参数
     zz = z // 3
     if zz == 1:
-        Q = np.array([[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, .5, 0.0], [0.0, 0.0, 0.0, 0.5]])
-        R = np.array([[0.5, 0.0], [0.0, 0.05]])
+        Q = np.array([[5.0, 0.0, 0.0, 0.0], [0.0, 5.0, 0.0, 0.0], [0.0, 0.0, 1000.0, 0.0], [0.0, 0.0, 0.0, 1.0]])
+        R = np.array([[1, 0.0], [0.0, 1]])
     else:
-        Q = np.array([[1.0, 0.0, 0.0, 0.0], [0.0, 5.0, 0.0, 0.0], [0.0, 0.0, .1, 0.0], [0.0, 0.0, 0.0, 1.0]])
-        R = np.array([[0.5, 0.0], [0.0, 0.05]])
+        Q = np.array([[5.0, 0.0, 0.0, 0.0], [0.0, 5.0, 0.0, 0.0], [0.0, 0.0, 1000.0, 0.0], [0.0, 0.0, 0.0, 1.0]])
+        R = np.array([[1, 0.0], [0.0, 1]])
 
     ## cost function
     obj = 0
@@ -54,8 +54,7 @@ def get_first_action(s0, u_hat, s_hat, z, x_f):
     g.append(X[:, 0] - P[:4])
 
     for i in range(N):
-        obj = obj + ca.mtimes([(X[:, i] - P[4:]).T, Q, X[:, i] - P[4:]]) \
-              # + ca.mtimes([U[:, i].T, R, U[:, i]])
+        obj = obj + ca.mtimes([(X[:, i] - P[4:]).T, Q, X[:, i] - P[4:]]) + ca.mtimes([U[:, i].T, R, U[:, i]])
         x_next_ = f(X[:, i], U[:, i]) * T + X[:, i]
         g.append(X[:, i + 1] - x_next_)
 
@@ -89,15 +88,16 @@ def get_first_action(s0, u_hat, s_hat, z, x_f):
 
     x0 = s0.reshape(-1, 1)# initial state
 
-    # x_m = np.zeros((n_states, N + 1))
-    dd = np.expand_dims(s0, axis=1)
-    tt = s_hat.reshape(4, 50)
-    x_m = np.concatenate((dd, tt), axis=1)
+    x_m = np.zeros((n_states, N + 1))
+    # dd = np.expand_dims(s0, axis=1)
+    # tt = s_hat.reshape(4, 50)
+    # x_m = np.concatenate((dd, tt), axis=1)
 
-    # x_m = s_hat.reshape(n_states, N + 1)
+
     next_states = x_m.copy().T
     xs = x_f.reshape(-1, 1)  # final state
-    u0 = u_hat.reshape(-1, 2).T  # np.ones((N, 2)) # controls
+    # u0 = u_hat.reshape(-1, 2).T  # np.ones((N, 2)) # controls
+    u0 = np.ones((N, 2)) # controls
 
     c_p = np.concatenate((x0, xs))
     init_control = np.concatenate((u0.reshape(-1, 1), next_states.reshape(-1, 1)))

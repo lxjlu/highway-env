@@ -6,6 +6,7 @@ from highway_env import utils
 from highway_env.road.road import Road, LaneIndex, Route
 from highway_env.types import Vector
 from highway_env.vehicle.kinematics import Vehicle
+from highway_env.utils import lmap
 
 
 class LxVehicle(Vehicle):
@@ -96,6 +97,8 @@ class LxVehicle(Vehicle):
         lane_y = []
         for item in np.arange(0, 101, 10):
             xx, yy = target_lane.position(x_r + item, 0)
+            xx = lmap(xx, [-254, 254], [-1, 1])
+            yy = lmap(yy, [0, 508], [-1, 1])
             lane_x.append(xx)
             lane_y.append(yy)
         return lane_x, lane_y
@@ -106,7 +109,7 @@ class LxVehicle(Vehicle):
         x, y = target_lane.position(lane_coords[0], 0)
         return x, y
 
-    def act(self, action: Union[dict, str] = None, PID=False) -> None:
+    def act(self, action: Union[dict, str] = None, PID=True) -> None:
         """
         Perform a high-level action to change the desired lane or speed.
 

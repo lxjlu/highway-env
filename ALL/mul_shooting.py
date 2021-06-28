@@ -20,7 +20,7 @@ clde = torch.load("de_model.pkl")
 em = np.load("embedding.npy")
 em = torch.Tensor(em)
 
-z = torch.LongTensor([8])
+z = torch.LongTensor([0])
 hidden = em[z.item()]
 hidden = hidden.unsqueeze(0)
 
@@ -41,7 +41,7 @@ env.config["v_y"] = positon_y
 env.config["v_h"] = heading
 env.config["v_s"] = speed
 env.config["v_lane_id"] = v_lane_id
-
+env.config["action"] = {'type': 'ContinuousAction'},
 env.reset()
 
 def get_hat(env, z):
@@ -69,27 +69,35 @@ def get_hat(env, z):
     s0 = s0.detach().cpu().numpy()
 
     x_f = s_hat.reshape(4, 50)[:, -1]
+    print("原本的终端是 ", x_f)
     x_f_local_x, x_f_local_y = env.road.network.get_lane(v_lane_id).local_coordinates(np.array([x_f[0], x_f[1]]))
     x_f_local_y = np.clip(x_f_local_y, -4, 4)
     x_f_xy = env.road.network.get_lane(v_lane_id).position(x_f_local_x, x_f_local_y)
     x_f[0] = x_f_xy[0]
     x_f[1] = x_f_xy[1]
+    x_f[2] = env.road.network.get_lane(v_lane_id).heading_at(x_f_xy[0])
+    print("现在的终端是 ", x_f)
     return s0, ss, s_hat, u_hat, x_f
 
 s0, ss, s_hat, u_hat, x_f = get_hat(env, z)
 
 action, u_e, x_e = get_first_action(s0, u_hat, s_hat, z.item(), x_f)
 
-# plt.plot(x_e[:, 0], x_e[:, 1])
-# plt.show()
+plt.figure(1)
+plt.plot(x_e[:, 0], x_e[:, 1])
+plt.figure(2)
+dd = s_hat.reshape(4, 50)
+plt.plot(dd[0,:], dd[1,:])
+plt.show()
 
-# for i in range(N):
-#     action = u_e[i, :]
-#
-#     obs, reward, terminal, info = env.step(action)
-#     env.render()
-#     time.sleep(0.1)
-# env.close()
+for i in range(N):
+    action = u_e[i, :]
+
+    obs, reward, terminal, info = env.step(action)
+
+    env.render()
+    time.sleep(0.1)
+env.close()
 
 
 

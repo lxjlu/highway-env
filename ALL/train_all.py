@@ -8,6 +8,7 @@ import torch.optim as optim
 import torch.nn.functional as F
 from nets import ReplayBuffer, CLEncoder, CLLoss, CLPP, CLDeconder, ActionNet
 from sklearn.manifold import TSNE
+from highway_env.utils import lmap
 
 save_pid_data = False
 load_pid = True
@@ -75,13 +76,18 @@ def pid_collector(nums=10000, save_pid_data=False):
         env.config["v_h"] = heading
         env.config["v_s"] = speed
         env.config["v_target_s"] = v_target_s
+        env.config["action"] = {'type': 'DiscreteMetaAction'},
 
         env.reset()
 
         p = env.vehicle.position
         i_h = env.vehicle.heading
         i_s = env.vehicle.speed
-        temp = [p[0], p[1], i_h, i_s]
+        # temp = [p[0], p[1], i_h, i_s]
+        # radius*(end_phase - start_phase) * self.direction
+        road_length = env.road.network.get_lane(v_lane_id).length
+        temp = [lmap(p[0], [-254, 254], [-1, 1]), lmap(p[1], [0, 508], [-1, 1]),
+                lmap(i_h, [-2*np.pi, np.pi], [-1, 1]), lmap(i_s, [-30, 30], [-1, 1])]
         x_road, y_road = env.vehicle.target_lane_position(p)
 
         action_his_omega = []
@@ -97,10 +103,10 @@ def pid_collector(nums=10000, save_pid_data=False):
             env.step(action)
             action_his_omega.append(env.vehicle.action["steering"])
             action_his_accel.append(env.vehicle.action["acceleration"])
-            x_his.append(env.vehicle.position[0])
-            y_his.append(env.vehicle.position[1])
-            h_his.append(env.vehicle.heading)
-            s_his.append(env.vehicle.speed)
+            x_his.append(lmap( env.vehicle.position[0], [-254, 254], [-1, 1]))
+            y_his.append(lmap( env.vehicle.position[1], [0, 508], [-1, 1]))
+            h_his.append(lmap( env.vehicle.heading, [-2*np.pi, np.pi], [-1, 1]))
+            s_his.append(lmap( env.vehicle.speed, [-30, 30], [-1, 1]))
             # env.render()
             # time.sleep(0.1)
         env.close()
@@ -131,6 +137,13 @@ def pid_collector(nums=10000, save_pid_data=False):
         np.save("pp_his.npy", np.array(pp_his))
         np.save("ss_his.npy", np.array(ss_his))
         np.save("tt_his.npy", np.array(tt_his))
+
+        # np.savetxt("label_his.csv", np.array(label_his), delimiter=",")
+        # np.savetxt("aa_his.csv", np.array(aa_his), delimiter=",")
+        # np.savetxt("s0_his.csv", np.array(s0_his), delimiter=",")
+        # np.savetxt("pp_his.csv", np.array(pp_his), delimiter=",")
+        # np.savetxt("ss_his.csv", np.array(ss_his), delimiter=",")
+        # np.savetxt("tt_his.csv", np.array(tt_his), delimiter=",")
         print("保存了PID的数据")
 
 
