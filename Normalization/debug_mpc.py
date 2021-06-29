@@ -99,14 +99,23 @@ N = 50
 
 s_hat = np.concatenate((x, y, theta, v))
 
-
-# first_a, u_e, x_e = get_first_action(s0, actions, s_hat, z.item(), x_f)
+x_f = np.array([50, 50, -1, 15])
+first_a, u_e, x_e = get_first_action(s0, actions, s_hat, z.item(), x_f)
 
 for i in range(N):
-    # action = u_e[i, :]
-    action = actions.reshape(-1, 50)[:, i]
+    action = first_a
+    # action = actions.reshape(-1, 50)[:, i]
 
     obs, reward, terminal, info = env.step(action)
+
+    p = env.vehicle.position
+    i_h = env.vehicle.heading
+    i_s = env.vehicle.speed
+    road_r = env.config["radius"]
+    s0 = [lmap(p[0], [-(road_r + 4), (road_r + 4)], [-1, 1]), lmap(p[1], [0, 2 * (road_r + 4)], [-1, 1]),
+              lmap(i_h, [-2 * np.pi, 2 * np.pi], [-1, 1]), lmap(i_s, [-max_v, max_v], [-1, 1])]
+    s0 = np.array(s0)
+    first_a, u_e, x_e = get_first_action(s0, actions, s_hat, z.item(), x_f)
 
     env.render()
     time.sleep(0.1)
