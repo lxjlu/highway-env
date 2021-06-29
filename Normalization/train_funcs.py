@@ -3,24 +3,28 @@ import highway_env
 import numpy as np
 from highway_env.utils import lmap
 import torch
-from nets import ReplayBuffer, CLEncoder, CLLoss, CLPP
+from nets import ReplayBuffer, CLEncoder, CLLoss, CLPP, CLDeconder
 import torch.optim as optim
 import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
+import torch.nn.functional as F
 
 
-bf = ReplayBuffer(load_pid=True)
+bf = ReplayBuffer(load_pid=False)
 # clen = CLEncoder()
 # clloss = CLLoss()
-clpp = CLPP()
-
+# clpp = CLPP()
+clde = CLDeconder()
 clen = torch.load("clen_model.pkl")
 clloss = torch.load("clloss_model.pkl")
+clpp = torch.load("clpp_model.pkl")
+# clde = torch.load("clde_model.pkl")
 
 # embedding = torch.nn.Embedding(9, 24)
 # cl_optimizer = optim.Adam(clen.parameters(), lr=1e-3)
 # em_optimizer = optim.Adam(embedding.parameters(), lr=1e-3)
 pp_optimizer = optim.Adam(clpp.parameters(), lr=1e-3)
+de_optimizer = optim.Adam(clde.parameters(), lr=1e-3)
 em = np.load("embedding.npy")
 
 
@@ -163,7 +167,7 @@ def pid_collector(nums=10000, save_pid_data=False, bf=None):
 def train_cl(nums=10001, save_model=False):
     loss_his = []
     for i in range(nums):
-        z_his, u_his, s0_his, X_his, ss_his, cl_his = bf.sample(1000)
+        z_his, u_his, s0_his, X_his, ss_his, cl_his, road_r_his = bf.sample(1000)
         cl_his = torch.Tensor(cl_his)
         z_his = torch.Tensor(z_his)
         feat = clen(cl_his)
@@ -183,7 +187,7 @@ def train_cl(nums=10001, save_model=False):
         torch.save(clloss, 'clloss_model.pkl')
 
 def eval_cl():
-    z_his, u_his, s0_his, X_his, ss_his, cl_his = bf.sample(500)
+    z_his, u_his, s0_his, X_his, ss_his, cl_his, road_r_his = bf.sample(500)
     cl_his = torch.Tensor(cl_his)
     feat = clen(cl_his)
     X = feat.detach().numpy()
@@ -196,7 +200,7 @@ def eval_cl():
 def train_embedding(nums=10, save_embedding=False):
     loss_his = []
     for i in range(nums):
-        z_his, u_his, s0_his, X_his, ss_his, cl_his = bf.sample(1000)
+        z_his, u_his, s0_his, X_his, ss_his, cl_his, road_r_his = bf.sample(1000)
         cl_his = torch.Tensor(cl_his)
         z_his = torch.Tensor(z_his)
         feats = clen(cl_his)
@@ -227,7 +231,7 @@ def train_embedding(nums=10, save_embedding=False):
 
 def train_pp(nums=10001, save_model=False):
     for i in range(nums):
-        z_his, u_his, s0_his, X_his, ss_his, cl_his = bf.sample(512)
+        z_his, u_his, s0_his, X_his, ss_his, cl_his, road_r_his = bf.sample(512)
         s0_his = torch.Tensor(s0_his)
         ss_his = torch.Tensor(ss_his)
         cl_his = torch.Tensor(cl_his)
@@ -256,9 +260,47 @@ def train_pp(nums=10001, save_model=False):
     if save_model:
         torch.save(clpp, "clpp_model.pkl")
 
+def train_de(nums=5001, save_model=False):
+    for i in range(nums):
+        z_his, u_his, s0_his, X_his, ss_his, cl_his, road_r_his = bf.sample(512)
+        s0_his = torch.Tensor(s0_his)
+        ss_his = torch.Tensor(ss_his)
+        cl_his = torch.Tensor(cl_his)
+        labels_his = torch.Tensor(z_his)
+        X_his = torch.Tensor(X_his)
+        u_his = torch.Tensor(u_his)
+
+        labels = labels_his.type(torch.LongTensor)
+        labels = F.one_hot(labels)
+        labels = labels.type(torch.float)
+        skills = torch.matmul(labels, torch.Tensor(em))
+
+        actions = clde(s0_his, ss_his, skills)
+        feat = clen(torch.cat((s0_his, ss_his, actions), 1))
+
+        # labels_his_hat = torch.argmin(torch.cdist(feat, embedding.weight.detach()), dim=1, keepdim=True)
+        # labels_his_hat = torch.argmin(torch.cdist(feat, torch.Tensor(em)), dim=1)
+        # re_loss = F.mse_loss(labels_his_hat, labels_his)
+        re_loss = torch.dist(u_his, actions)
+        norm_loss = actions.norm(dim=1).sum()
+        loss = re_loss + 0.001 * norm_loss
+
+        if i % 100 == 0:
+            print("第 {} 次的 loss 是 {}".format(i + 1, loss.item()))
+
+        de_optimizer.zero_grad()
+        loss.backward()
+        de_optimizer.step()
+
+    if save_model:
+        torch.save(clde, "clde_model.pkl")
+
+
 # pid_collector(nums=5000, save_pid_data=True) # 用来离线收集PID数据
 # train_cl(save_model=True)
 # eval_cl()
 # train_embedding(save_embedding=False)
 
-train_pp(save_model=True)
+# train_pp(save_model=False)
+
+# train_de(save_model=False)

@@ -22,8 +22,8 @@ class MyEnv(AbstractEnv):
                 "type": "Kinematics",
             },
             "action": {
-                # "type": "ContinuousAction",
-                "type": "DiscreteMetaAction",
+                "type": "ContinuousAction",
+                # "type": "DiscreteMetaAction",
             },
             "lanes_count": 3,
             "policy_frequency": 10,

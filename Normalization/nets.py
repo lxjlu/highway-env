@@ -41,6 +41,7 @@ class ReplayBuffer():
         mini_batch = random.sample(self.buffer, n)
         z_his, u_his, s0_his, X_his, ss_his = [], [], [], [], []
         cl_his = []
+        road_r_his = []
 
         for one_data in mini_batch:
             z, u, s0, X, ss, road_r = one_data
@@ -49,12 +50,13 @@ class ReplayBuffer():
             s0_his.append(s0)
             X_his.append(X)
             ss_his.append(ss)
+            road_r_his.append(road_r)
 
             cl_input = np.concatenate((s0, ss, u), 0)
             cl_his.append(cl_input)
 
         return np.array(z_his), np.array(u_his), np.array(s0_his), np.array(X_his), \
-               np.array(ss_his), np.array(cl_his)
+               np.array(ss_his), np.array(cl_his), np.array(road_r_his)
 
 
 class CLEncoder(nn.Module):
@@ -210,11 +212,11 @@ class CLDeconder(nn.Module):
             nn.Linear(400, 400),
             nn.ReLU(),
             nn.Linear(400, 100),
+            nn.Tanh()
         )
 
     def forward(self, s0, ss, hidden):
         actions = self.deconder(torch.cat((s0, ss, hidden), 1))
-
         return actions
 
 
