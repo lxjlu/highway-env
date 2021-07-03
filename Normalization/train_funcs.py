@@ -10,18 +10,18 @@ from sklearn.manifold import TSNE
 import torch.nn.functional as F
 
 
-bf = ReplayBuffer(load_pid=False)
+bf = ReplayBuffer(load_pid=True)
 # clen = CLEncoder()
 # clloss = CLLoss()
-# clpp = CLPP()
+clpp = CLPP()
 clde = CLDeconder()
 clen = torch.load("clen_model.pkl")
 clloss = torch.load("clloss_model.pkl")
-clpp = torch.load("clpp_model.pkl")
+# clpp = torch.load("clpp_model.pkl")
 # clde = torch.load("clde_model.pkl")
 
 # embedding = torch.nn.Embedding(9, 24)
-# cl_optimizer = optim.Adam(clen.parameters(), lr=1e-3)
+cl_optimizer = optim.Adam(clen.parameters(), lr=1e-3)
 # em_optimizer = optim.Adam(embedding.parameters(), lr=1e-3)
 pp_optimizer = optim.Adam(clpp.parameters(), lr=1e-3)
 de_optimizer = optim.Adam(clde.parameters(), lr=1e-3)
@@ -181,6 +181,7 @@ def train_cl(nums=10001, save_model=False):
             print("第 {} 次训练的损失是 {}".format(i, np.mean(loss_his[-100:])))
     plt.figure(1)
     plt.plot(np.arange(len(loss_his)), loss_his)
+    plt.title("CL loss")
     plt.show()
     if save_model:
         torch.save(clen, 'clen_model.pkl')
@@ -230,6 +231,9 @@ def train_embedding(nums=10, save_embedding=False):
     plt.show()
 
 def train_pp(nums=10001, save_model=False):
+    re_loss_his = []
+    ni_loss_his = []
+    loss_his = []
     for i in range(nums):
         z_his, u_his, s0_his, X_his, ss_his, cl_his, road_r_his = bf.sample(512)
         s0_his = torch.Tensor(s0_his)
@@ -248,6 +252,9 @@ def train_pp(nums=10001, save_model=False):
         KLD_s0 = -0.5 * torch.sum(1 + s0_log_sigma - s0_mu.pow(2) - s0_log_sigma.exp())
         KLD_ss = -0.5 * torch.sum(1 + ss_log_sigma - ss_mu.pow(2) - ss_log_sigma.exp())
         loss = torch.dist(pp_hat, X_his) + 0.05 * (KLD_s0 + KLD_ss) + 2000 * torch.dist(X_F, pp_F)
+        re_loss_his.append(torch.dist(X_F, pp_F).item())
+        ni_loss_his.append(0.05 * (KLD_s0 + KLD_ss).item())
+        loss_his.append(loss.item())
         # loss = torch.dist(pp_hat, X_his)
 
         pp_optimizer.zero_grad()
@@ -260,7 +267,18 @@ def train_pp(nums=10001, save_model=False):
     if save_model:
         torch.save(clpp, "clpp_model.pkl")
 
+    plt.figure(4)
+    plt.plot(np.arange(len(re_loss_his)), re_loss_his)
+    plt.title("final state recon loss")
+    # plt.figure(5)
+    # plt.scatter(np.arange(len(ni_loss_his)), ni_loss_his)
+    # plt.figure(6)
+    # plt.scatter(np.arange(len(loss_his)), loss_his)
+    plt.show()
+
+
 def train_de(nums=5001, save_model=False):
+    loss_his = []
     for i in range(nums):
         z_his, u_his, s0_his, X_his, ss_his, cl_his, road_r_his = bf.sample(512)
         s0_his = torch.Tensor(s0_his)
@@ -284,6 +302,7 @@ def train_de(nums=5001, save_model=False):
         re_loss = torch.dist(u_his, actions)
         norm_loss = actions.norm(dim=1).sum()
         loss = re_loss + 0.001 * norm_loss
+        loss_his.append(re_loss.item())
 
         if i % 100 == 0:
             print("第 {} 次的 loss 是 {}".format(i + 1, loss.item()))
@@ -295,12 +314,16 @@ def train_de(nums=5001, save_model=False):
     if save_model:
         torch.save(clde, "clde_model.pkl")
 
+    plt.figure(7)
+    plt.plot(np.arange(len(loss_his)), loss_his)
+    plt.title("de recon loss")
+    plt.show()
 
 # pid_collector(nums=5000, save_pid_data=True) # 用来离线收集PID数据
-# train_cl(save_model=True)
+# train_cl(nums=2000, save_model=False)
 # eval_cl()
 # train_embedding(save_embedding=False)
 
-# train_pp(save_model=False)
+train_pp(nums=2000, save_model=False)
 
-# train_de(save_model=False)
+train_de(save_model=False)
